@@ -86,7 +86,7 @@
 
   .search-bar {
     display: grid;
-    grid-template-columns: 1fr 220px 180px auto auto;
+    grid-template-columns: 1fr 200px auto auto;
     gap: 0.75rem;
     margin-bottom: 2rem;
     align-items: end;
@@ -409,20 +409,8 @@
       <input type="text" id="brandInput" placeholder="e.g. Michelin, Bridgestone, Continental…" />
     </div>
     <div class="field-group">
-      <label>Fuel Efficiency</label>
-      <select id="fuelFilter">
-        <option value="">All Classes</option>
-        <option>A</option><option>B</option><option>C</option>
-        <option>D</option><option>E</option><option>F</option><option>G</option>
-      </select>
-    </div>
-    <div class="field-group">
-      <label>Wet Grip</label>
-      <select id="wetFilter">
-        <option value="">All Classes</option>
-        <option>A</option><option>B</option><option>C</option>
-        <option>D</option><option>E</option><option>F</option><option>G</option>
-      </select>
+      <label>Tyre Size</label>
+      <input type="text" id="sizeInput" placeholder="e.g. 225/45R17" />
     </div>
     <div class="field-group">
       <label>&nbsp;</label>
@@ -511,8 +499,7 @@ const PAGE_SIZE = 15;
 // ─── SEARCH ───────────────────────────────────────────────────────────────────
 function doSearch() {
   const brand = document.getElementById('brandInput').value.trim().toLowerCase();
-  const fuel  = document.getElementById('fuelFilter').value;
-  const wet   = document.getElementById('wetFilter').value;
+  const size  = document.getElementById('sizeInput').value.trim().toLowerCase();
 
   showLoading();
 
@@ -520,9 +507,8 @@ function doSearch() {
   setTimeout(() => {
     let results = MOCK_DATA.filter(t => {
       const matchBrand = !brand || t.supplier.toLowerCase().includes(brand) || t.model.toLowerCase().includes(brand);
-      const matchFuel  = !fuel  || t.fuel === fuel;
-      const matchWet   = !wet   || t.wet  === wet;
-      return matchBrand && matchFuel && matchWet;
+      const matchSize  = !size  || t.size.toLowerCase().includes(size);
+      return matchBrand && matchSize;
     });
 
     allResults = results;
@@ -705,6 +691,9 @@ function showLoading() {
 
 // Enter key on search
 document.getElementById('brandInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+document.getElementById('sizeInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') doSearch();
 });
 </script>
