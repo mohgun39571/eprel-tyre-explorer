@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EPREL Tyre Explorer</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --surface2: #1e2127;
+    --border: #2a2d35;
+    --accent: #e8c84a;
+    --accent2: #4ae8a0;
+    --danger: #e84a4a;
+    --text: #d8dae0;
+    --muted: #666c7a;
+    --fuel-A: #1a8c3a; --fuel-B: #5cb85c; --fuel-C: #a0c040;
+    --fuel-D: #e8c84a; --fuel-E: #e89040; --fuel-F: #e85c30; --fuel-G: #cc2222;
+    --wet-A: #1a6aaa; --wet-B: #3a90cc; --wet-C: #60b0e0;
+    --wet-D: #90c8f0; --wet-E: #b8ddf8; --wet-F: #d0eaff; --wet-G: #e8f4ff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px),
+      repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(255,255,255,0.01) 80px, rgba(255,255,255,0.01) 81px);
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    background: rgba(14,15,17,0.95);
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+
+  .logo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: 0.08em;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.85); }
+  }
+
+  .header-meta {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .main {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .search-bar {
+    display: grid;
+    grid-template-columns: 1fr 220px 180px auto auto;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    align-items: end;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  input, select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.6rem 0.9rem;
+    font-family: 'Barlow', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 400;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(232,200,74,0.12);
+  }
+
+  select option { background: var(--surface2); }
+
+  button {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    padding: 0.65rem 1.4rem;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #111;
+  }
+  .btn-primary:hover { background: #f0d458; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-export {
+    background: transparent;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+  }
+  .btn-export:hover { background: rgba(74,232,160,0.08); }
+  .btn-export:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+  }
+
+  .stat { display: flex; flex-direction: column; gap: 0.1rem; }
+  .stat-value {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+  }
+  .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+
+  .stats-bar .spacer { flex: 1; }
+
+  /* Table */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  thead {
+    background: var(--surface2);
+    position: sticky; top: 64px;
+  }
+
+  th {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th:hover { color: var(--text); }
+  th.sort-asc::after { content: ' ↑'; color: var(--accent); }
+  th.sort-desc::after { content: ' ↓'; color: var(--accent); }
+
+  td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  tbody tr {
+    transition: background 0.1s;
+  }
+  tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+  .eprel-id {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    color: var(--accent);
+    font-size: 0.9rem;
+    letter-spacing: 0.04em;
+  }
+
+  .supplier { font-weight: 500; color: #fff; }
+  .model { color: var(--text); }
+  .size { font-family: monospace; font-size: 0.8rem; color: var(--muted); }
+
+  /* Class badges */
+  .class-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    color: #fff;
+    position: relative;
+  }
+
+  .class-badge::after {
+    content: '';
+    position: absolute;
+    right: -6px; top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-left-width: 6px;
+  }
+
+  .fuel-A { background: var(--fuel-A); } .fuel-A::after { border-left-color: var(--fuel-A); }
+  .fuel-B { background: var(--fuel-B); } .fuel-B::after { border-left-color: var(--fuel-B); }
+  .fuel-C { background: var(--fuel-C); } .fuel-C::after { border-left-color: var(--fuel-C); }
+  .fuel-D { background: var(--fuel-D); color: #111; } .fuel-D::after { border-left-color: var(--fuel-D); }
+  .fuel-E { background: var(--fuel-E); color: #111; } .fuel-E::after { border-left-color: var(--fuel-E); }
+  .fuel-F { background: var(--fuel-F); } .fuel-F::after { border-left-color: var(--fuel-F); }
+  .fuel-G { background: var(--fuel-G); } .fuel-G::after { border-left-color: var(--fuel-G); }
+
+  .wet-A { background: var(--wet-A); } .wet-A::after { border-left-color: var(--wet-A); }
+  .wet-B { background: var(--wet-B); } .wet-B::after { border-left-color: var(--wet-B); }
+  .wet-C { background: var(--wet-C); color: #111; } .wet-C::after { border-left-color: var(--wet-C); }
+  .wet-D { background: var(--wet-D); color: #111; } .wet-D::after { border-left-color: var(--wet-D); }
+  .wet-E { background: var(--wet-E); color: #111; } .wet-E::after { border-left-color: var(--wet-E); }
+  .wet-F { background: var(--wet-F); color: #111; } .wet-F::after { border-left-color: var(--wet-F); }
+  .wet-G { background: var(--wet-G); color: #111; } .wet-G::after { border-left-color: var(--wet-G); }
+
+  .noise-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .noise-bar-wrap {
+    width: 60px; height: 6px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .noise-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4ae8a0, #e8c84a, #e84a4a);
+  }
+
+  .noise-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text);
+    min-width: 36px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 5rem 2rem;
+    color: var(--muted);
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+  }
+
+  .empty-state h3 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+
+  .api-notice {
+    background: rgba(232,200,74,0.06);
+    border: 1px solid rgba(232,200,74,0.2);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.82rem;
+    color: var(--accent);
+  }
+
+  .api-notice strong { font-weight: 600; }
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .page-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .page-btn.active { background: var(--accent); color: #111; border-color: var(--accent); }
+  .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .page-info { font-size: 0.8rem; color: var(--muted); padding: 0 0.5rem; }
+
+  .loading {
+    text-align: center;
+    padding: 4rem;
+    color: var(--muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.9rem;
+  }
+
+  .spinner {
+    width: 32px; height: 32px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    EPREL TYRE EXPLORER
+  </div>
+  <div class="header-meta">EU Energy Label Registry · Tyre Data</div>
+</header>
+
+<div class="main">
+
+  <div class="api-notice">
+    <span>⚠</span>
+    <span><strong>Demo mode:</strong> Showing sample data. Add your EPREL API key in the script to load live data from eprel.ec.europa.eu</span>
+  </div>
+
+  <div class="search-bar">
+    <div class="field-group">
+      <label>Brand / Supplier</label>
+      <input type="text" id="brandInput" placeholder="e.g. Michelin, Bridgestone, Continental…" />
+    </div>
+    <div class="field-group">
+      <label>Fuel Efficiency</label>
+      <select id="fuelFilter">
+        <option value="">All Classes</option>
+        <option>A</option><option>B</option><option>C</option>
+        <option>D</option><option>E</option><option>F</option><option>G</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label>Wet Grip</label>
+      <select id="wetFilter">
+        <option value="">All Classes</option>
+        <option>A</option><option>B</option><option>C</option>
+        <option>D</option><option>E</option><option>F</option><option>G</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label>&nbsp;</label>
+      <button class="btn-primary" onclick="doSearch()">Search</button>
+    </div>
+    <div class="field-group">
+      <label>&nbsp;</label>
+      <button class="btn-export" id="exportBtn" onclick="exportCSV()" disabled>↓ Export CSV</button>
+    </div>
+  </div>
+
+  <div class="stats-bar" id="statsBar" style="display:none">
+    <div class="stat">
+      <div class="stat-value" id="statTotal">0</div>
+      <div class="stat-label">Results</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="statBrands">0</div>
+      <div class="stat-label">Brands</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="statTopFuel">–</div>
+      <div class="stat-label">Most Common Fuel Class</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="statAvgNoise">–</div>
+      <div class="stat-label">Avg Noise (dB)</div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <div id="content">
+    <div class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <h3>Search for Tyres</h3>
+      <p>Enter a brand name or leave blank to browse all registered tyres</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── MOCK DATA ────────────────────────────────────────────────────────────────
+// Replace fetchFromAPI() with real EPREL API calls once you have a key
+
+const MOCK_DATA = [
+  { eprel: "EPR-001", supplier: "Michelin", model: "Pilot Sport 5", size: "225/45R17", load: "94", speed: "Y", fuel: "A", wet: "A", noise: 69, noiseClass: "A" },
+  { eprel: "EPR-002", supplier: "Michelin", model: "CrossClimate 2", size: "205/55R16", load: "91", speed: "V", fuel: "B", wet: "A", noise: 71, noiseClass: "B" },
+  { eprel: "EPR-003", supplier: "Michelin", model: "Primacy 4+", size: "215/60R16", load: "99", speed: "H", fuel: "A", wet: "A", noise: 68, noiseClass: "A" },
+  { eprel: "EPR-004", supplier: "Bridgestone", model: "Turanza T005", size: "225/50R17", load: "94", speed: "W", fuel: "B", wet: "A", noise: 70, noiseClass: "A" },
+  { eprel: "EPR-005", supplier: "Bridgestone", model: "Potenza Sport", size: "245/40R18", load: "97", speed: "Y", fuel: "C", wet: "A", noise: 73, noiseClass: "B" },
+  { eprel: "EPR-006", supplier: "Bridgestone", model: "Duravis R002", size: "215/75R16C", load: "113", speed: "R", fuel: "C", wet: "B", noise: 72, noiseClass: "B" },
+  { eprel: "EPR-007", supplier: "Continental", model: "PremiumContact 7", size: "205/55R16", load: "91", speed: "V", fuel: "A", wet: "A", noise: 70, noiseClass: "A" },
+  { eprel: "EPR-008", supplier: "Continental", model: "SportContact 7", size: "255/35R20", load: "97", speed: "Y", fuel: "B", wet: "A", noise: 74, noiseClass: "B" },
+  { eprel: "EPR-009", supplier: "Continental", model: "EcoContact 6", size: "195/65R15", load: "91", speed: "T", fuel: "A", wet: "B", noise: 67, noiseClass: "A" },
+  { eprel: "EPR-010", supplier: "Pirelli", model: "P Zero PZ4", size: "245/45R18", load: "100", speed: "Y", fuel: "B", wet: "A", noise: 72, noiseClass: "B" },
+  { eprel: "EPR-011", supplier: "Pirelli", model: "Cinturato P7", size: "225/45R17", load: "91", speed: "W", fuel: "A", wet: "B", noise: 69, noiseClass: "A" },
+  { eprel: "EPR-012", supplier: "Pirelli", model: "Scorpion Verde", size: "235/55R19", load: "105", speed: "V", fuel: "B", wet: "B", noise: 71, noiseClass: "B" },
+  { eprel: "EPR-013", supplier: "Goodyear", model: "Eagle F1 Asymmetric 6", size: "225/45R17", load: "94", speed: "Y", fuel: "A", wet: "A", noise: 70, noiseClass: "A" },
+  { eprel: "EPR-014", supplier: "Goodyear", model: "EfficientGrip Performance 2", size: "205/55R16", load: "91", speed: "V", fuel: "A", wet: "B", noise: 68, noiseClass: "A" },
+  { eprel: "EPR-015", supplier: "Goodyear", model: "Vector 4Seasons Gen-3", size: "215/60R17", load: "96", speed: "V", fuel: "C", wet: "A", noise: 71, noiseClass: "B" },
+  { eprel: "EPR-016", supplier: "Dunlop", model: "Sport Maxx RT2", size: "235/40R18", load: "95", speed: "Y", fuel: "C", wet: "A", noise: 73, noiseClass: "B" },
+  { eprel: "EPR-017", supplier: "Dunlop", model: "SportSmart TT", size: "120/70ZR17", load: "58", speed: "W", fuel: "B", wet: "B", noise: 70, noiseClass: "B" },
+  { eprel: "EPR-018", supplier: "Hankook", model: "Ventus S1 evo3", size: "225/40R18", load: "92", speed: "Y", fuel: "B", wet: "A", noise: 71, noiseClass: "B" },
+  { eprel: "EPR-019", supplier: "Hankook", model: "Kinergy 4S2", size: "205/55R16", load: "94", speed: "H", fuel: "B", wet: "A", noise: 69, noiseClass: "A" },
+  { eprel: "EPR-020", supplier: "Yokohama", model: "Advan Sport V107", size: "275/40R20", load: "106", speed: "Y", fuel: "B", wet: "A", noise: 75, noiseClass: "B" },
+  { eprel: "EPR-021", supplier: "Yokohama", model: "BluEarth-GT AE51", size: "205/55R16", load: "91", speed: "V", fuel: "A", wet: "B", noise: 68, noiseClass: "A" },
+  { eprel: "EPR-022", supplier: "Toyo", model: "Proxes Sport", size: "225/45R17", load: "94", speed: "Y", fuel: "C", wet: "A", noise: 72, noiseClass: "B" },
+  { eprel: "EPR-023", supplier: "Falken", model: "Azenis FK520", size: "245/40R18", load: "97", speed: "Y", fuel: "B", wet: "A", noise: 73, noiseClass: "B" },
+  { eprel: "EPR-024", supplier: "Michelin", model: "Agilis 3", size: "215/65R16C", load: "109", speed: "T", fuel: "B", wet: "B", noise: 72, noiseClass: "B" },
+  { eprel: "EPR-025", supplier: "Continental", model: "VanContact Ultra", size: "225/75R16C", load: "121", speed: "R", fuel: "C", wet: "B", noise: 74, noiseClass: "B" },
+  { eprel: "EPR-026", supplier: "Pirelli", model: "Winter Sottozero 3", size: "225/45R17", load: "91", speed: "V", fuel: "E", wet: "A", noise: 71, noiseClass: "B" },
+  { eprel: "EPR-027", supplier: "Goodyear", model: "UltraGrip Performance+", size: "205/55R16", load: "94", speed: "H", fuel: "D", wet: "A", noise: 70, noiseClass: "A" },
+  { eprel: "EPR-028", supplier: "Bridgestone", model: "Blizzak LM005", size: "225/55R17", load: "101", speed: "V", fuel: "E", wet: "A", noise: 72, noiseClass: "B" },
+  { eprel: "EPR-029", supplier: "Michelin", model: "Alpin 6", size: "205/55R16", load: "91", speed: "H", fuel: "D", wet: "A", noise: 69, noiseClass: "A" },
+  { eprel: "EPR-030", supplier: "Nokian", model: "WR Snowproof P", size: "225/45R17", load: "94", speed: "V", fuel: "E", wet: "A", noise: 70, noiseClass: "A" },
+];
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let allResults = [];
+let sortCol = null;
+let sortDir = 1;
+let currentPage = 1;
+const PAGE_SIZE = 15;
+
+// ─── SEARCH ───────────────────────────────────────────────────────────────────
+function doSearch() {
+  const brand = document.getElementById('brandInput').value.trim().toLowerCase();
+  const fuel  = document.getElementById('fuelFilter').value;
+  const wet   = document.getElementById('wetFilter').value;
+
+  showLoading();
+
+  // Simulate async fetch (swap this for real fetch() call with API key)
+  setTimeout(() => {
+    let results = MOCK_DATA.filter(t => {
+      const matchBrand = !brand || t.supplier.toLowerCase().includes(brand) || t.model.toLowerCase().includes(brand);
+      const matchFuel  = !fuel  || t.fuel === fuel;
+      const matchWet   = !wet   || t.wet  === wet;
+      return matchBrand && matchFuel && matchWet;
+    });
+
+    allResults = results;
+    currentPage = 1;
+    sortCol = null;
+    render();
+  }, 400);
+}
+
+// ─── REAL API FUNCTION (replace mock above) ───────────────────────────────────
+/*
+async function fetchFromEPREL(brand, page = 0) {
+  const API_KEY = 'YOUR_API_KEY_HERE';
+  const params = new URLSearchParams({
+    page, size: 100,
+    registrationStatus: 'REGISTERED',
+    ...(brand && { supplierName: brand })
+  });
+  const res = await fetch(`https://eprel.ec.europa.eu/api/products/tyres?${params}`, {
+    headers: { 'Accept': 'application/json', 'Authorization': `Bearer ${API_KEY}` }
+  });
+  return res.json();
+}
+*/
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const sorted = getSorted(allResults);
+  const page = paginate(sorted, currentPage);
+
+  const content = document.getElementById('content');
+  const statsBar = document.getElementById('statsBar');
+  const exportBtn = document.getElementById('exportBtn');
+
+  if (allResults.length === 0) {
+    statsBar.style.display = 'none';
+    exportBtn.disabled = true;
+    content.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <h3>No Results</h3>
+        <p>Try a different brand name or remove filters</p>
+      </div>`;
+    return;
+  }
+
+  // Stats
+  statsBar.style.display = 'flex';
+  exportBtn.disabled = false;
+  document.getElementById('statTotal').textContent = allResults.length;
+  document.getElementById('statBrands').textContent = new Set(allResults.map(t => t.supplier)).size;
+  document.getElementById('statTopFuel').textContent = mode(allResults.map(t => t.fuel));
+  const noises = allResults.map(t => t.noise).filter(Boolean);
+  document.getElementById('statAvgNoise').textContent = noises.length
+    ? (noises.reduce((a,b) => a+b, 0) / noises.length).toFixed(1) + ' dB'
+    : '–';
+
+  // Table
+  const noiseMin = 60, noiseMax = 80;
+  const rows = page.map(t => {
+    const np = Math.min(100, Math.max(0, ((t.noise - noiseMin) / (noiseMax - noiseMin)) * 100));
+    return `<tr>
+      <td><span class="eprel-id">${t.eprel}</span></td>
+      <td><span class="supplier">${t.supplier}</span></td>
+      <td><span class="model">${t.model}</span></td>
+      <td><span class="size">${t.size}</span></td>
+      <td style="color:var(--muted)">${t.load}/${t.speed}</td>
+      <td><span class="class-badge fuel-${t.fuel}">${t.fuel}</span></td>
+      <td><span class="class-badge wet-${t.wet}">${t.wet}</span></td>
+      <td>
+        <div class="noise-cell">
+          <span class="noise-val">${t.noise}</span>
+          <div class="noise-bar-wrap"><div class="noise-bar" style="width:${np}%"></div></div>
+          <span style="font-size:0.75rem;color:var(--muted)">${t.noiseClass}</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const cols = [
+    ['eprel','EPREL ID'], ['supplier','Supplier'], ['model','Model'], ['size','Tyre Size'],
+    ['load','Load/Speed'], ['fuel','Fuel Eff.'], ['wet','Wet Grip'], ['noise','Noise (dB)']
+  ];
+
+  const headers = cols.map(([k, label]) => {
+    let cls = '';
+    if (sortCol === k) cls = sortDir === 1 ? 'sort-asc' : 'sort-desc';
+    return `<th class="${cls}" onclick="setSort('${k}')">${label}</th>`;
+  }).join('');
+
+  const totalPages = Math.ceil(allResults.length / PAGE_SIZE);
+
+  let paginationHtml = '';
+  if (totalPages > 1) {
+    paginationHtml = `<div class="pagination">
+      <button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Prev</button>
+      ${pageButtons(currentPage, totalPages)}
+      <button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Next ›</button>
+      <span class="page-info">Page ${currentPage} of ${totalPages}</span>
+    </div>`;
+  }
+
+  content.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr>${headers}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    ${paginationHtml}
+  `;
+}
+
+function pageButtons(cur, total) {
+  let btns = '';
+  const range = new Set([1, total, cur-1, cur, cur+1].filter(p => p >= 1 && p <= total));
+  let prev = null;
+  for (const p of [...range].sort((a,b)=>a-b)) {
+    if (prev && p - prev > 1) btns += `<span class="page-info">…</span>`;
+    btns += `<button class="page-btn ${p===cur?'active':''}" onclick="goPage(${p})">${p}</button>`;
+    prev = p;
+  }
+  return btns;
+}
+
+// ─── SORT ─────────────────────────────────────────────────────────────────────
+function setSort(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+  currentPage = 1;
+  render();
+}
+
+function getSorted(data) {
+  if (!sortCol) return data;
+  return [...data].sort((a, b) => {
+    let av = a[sortCol], bv = b[sortCol];
+    if (typeof av === 'number') return (av - bv) * sortDir;
+    return String(av).localeCompare(String(bv)) * sortDir;
+  });
+}
+
+function paginate(data, page) {
+  const start = (page - 1) * PAGE_SIZE;
+  return data.slice(start, start + PAGE_SIZE);
+}
+
+function goPage(p) {
+  const max = Math.ceil(allResults.length / PAGE_SIZE);
+  if (p < 1 || p > max) return;
+  currentPage = p;
+  render();
+}
+
+// ─── CSV EXPORT ───────────────────────────────────────────────────────────────
+function exportCSV() {
+  const headers = ['EPREL ID','Supplier','Model','Tyre Size','Load Index','Speed Symbol','Fuel Efficiency','Wet Grip','Noise (dB)','Noise Class'];
+  const rows = allResults.map(t => [t.eprel, t.supplier, t.model, t.size, t.load, t.speed, t.fuel, t.wet, t.noise, t.noiseClass]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `eprel_tyres_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function mode(arr) {
+  const freq = {};
+  arr.forEach(v => freq[v] = (freq[v]||0) + 1);
+  return Object.entries(freq).sort((a,b) => b[1]-a[1])[0]?.[0] ?? '–';
+}
+
+function showLoading() {
+  document.getElementById('content').innerHTML = `
+    <div class="loading"><div class="spinner"></div>Fetching tyre data…</div>`;
+  document.getElementById('statsBar').style.display = 'none';
+  document.getElementById('exportBtn').disabled = true;
+}
+
+// Enter key on search
+document.getElementById('brandInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+</script>
+</body>
+</html>
