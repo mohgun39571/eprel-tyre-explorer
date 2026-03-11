@@ -390,16 +390,174 @@
   }
 
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── LOGIN SCREEN ── */
+  #loginScreen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px),
+      repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(255,255,255,0.01) 80px, rgba(255,255,255,0.01) 81px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  .login-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 2.5rem 2.5rem 2rem;
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .login-logo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    letter-spacing: 0.08em;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .login-logo .logo-dot {
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .login-subtitle {
+    font-size: 0.78rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    margin-top: -0.75rem;
+  }
+
+  .login-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .login-field label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .login-field input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.65rem 0.9rem;
+    font-family: 'Barlow', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+  }
+
+  .login-field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(232,200,74,0.12);
+  }
+
+  .login-btn {
+    width: 100%;
+    padding: 0.7rem;
+    background: var(--accent);
+    color: #111;
+    border: none;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 0.25rem;
+  }
+
+  .login-btn:hover { background: #f0d458; }
+
+  .login-error {
+    font-size: 0.78rem;
+    color: var(--danger);
+    text-align: center;
+    min-height: 1.1rem;
+    letter-spacing: 0.02em;
+  }
+
+  .login-shake {
+    animation: shake 0.35s ease;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%       { transform: translateX(-8px); }
+    40%       { transform: translateX(8px); }
+    60%       { transform: translateX(-5px); }
+    80%       { transform: translateX(5px); }
+  }
+
+  /* logout button in header */
+  .btn-logout {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 0.35rem 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
 </style>
 </head>
 <body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div id="loginScreen">
+  <div class="login-box" id="loginBox">
+    <div>
+      <div class="login-logo">
+        <div class="logo-dot"></div>
+        EPREL TYRE EXPLORER
+      </div>
+    </div>
+    <div class="login-field">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="Enter username" autocomplete="username" />
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="Enter password" autocomplete="current-password" />
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <button class="login-btn" onclick="attemptLogin()">Sign In →</button>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="appShell" style="display:none">
 
 <header>
   <div class="logo">
     <div class="logo-dot"></div>
     EPREL TYRE EXPLORER
   </div>
-  <div class="header-meta">EU Energy Label Registry · Tyre Data</div>
+  <button class="btn-logout" onclick="logout()">Sign Out</button>
 </header>
 
 <div class="main">
@@ -456,7 +614,9 @@
     </div>
   </div>
 
-</div>
+</div> <!-- /main -->
+
+</div> <!-- /appShell -->
 
 <script>
 // ─── MOCK DATA ────────────────────────────────────────────────────────────────
@@ -702,6 +862,54 @@ document.getElementById('brandInput').addEventListener('keydown', e => {
 document.getElementById('sizeInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') doSearch();
 });
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+// ⚠ Change these credentials before deploying
+const CREDENTIALS = { username: 'eprel_team', password: 'Tyres@2024' };
+
+function attemptLogin() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const errorEl = document.getElementById('loginError');
+  const box = document.getElementById('loginBox');
+
+  if (user === CREDENTIALS.username && pass === CREDENTIALS.password) {
+    sessionStorage.setItem('eprel_auth', 'true');
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appShell').style.display = 'block';
+    errorEl.textContent = '';
+  } else {
+    errorEl.textContent = 'Incorrect username or password.';
+    box.classList.remove('login-shake');
+    void box.offsetWidth; // reflow to restart animation
+    box.classList.add('login-shake');
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('eprel_auth');
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// Check session on load
+if (sessionStorage.getItem('eprel_auth') === 'true') {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'block';
+}
+
+// Enter key on login fields
+['loginUser', 'loginPass'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') attemptLogin();
+  });
+});
 </script>
+
 </body>
 </html>
